@@ -1,0 +1,35 @@
+// Firestore Rules - Add these to your Firebase Console
+// Path: /firestore.rules
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Messages collection - Allow users to read/write their own messages
+    match /messages/{messageId} {
+      allow read: if request.auth != null && 
+        (request.auth.uid in resource.data.participantIds || 
+         resource.data.senderId == request.auth.uid);
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.senderId;
+      allow update: if false; // Messages cannot be updated
+      allow delete: if request.auth.uid == resource.data.senderId;
+    }
+
+    // Conversations collection
+    match /conversations/{conversationId} {
+      allow read: if request.auth != null && 
+        request.auth.uid in resource.data.participants;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && 
+        request.auth.uid in resource.data.participants;
+      allow delete: if false;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.uid == userId;
+    }
+  }
+}
